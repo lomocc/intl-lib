@@ -14,7 +14,7 @@ yarn add intl-lib
 
 - Define Your Translation JSON
 
-Create your translation JSON file, for example `dictionaries/en-US.json`:
+Create JSON files for each locale in a `dictionaries` directory. For example, create `en-US.json` and `fr-FR.json`:
 
 ```json
 {
@@ -22,9 +22,9 @@ Create your translation JSON file, for example `dictionaries/en-US.json`:
 }
 ```
 
-- Extend the Translation Type
+- Extend the Base Translation Type
 
-Create a type that extends the base translation type provided by the library:
+To ensure type safety, extend the base translation type provided by `intl-lib` with your custom translations. This allows you to use TypeScript to catch errors in translation keys.
 
 ```ts
 import en_US from './dictionaries/en-US.json';
@@ -36,9 +36,7 @@ declare module 'intl-lib' {
 }
 ```
 
-1. Wrap Your App with InternationalizationProvider
-
-Before using the translation components or hooks, wrap your application with the provider, supplying the translations and optionally the default locale:
+- Wrap Your Application with the IntlProvider
 
 ```tsx
 import { IntlProvider } from 'intl-lib';
@@ -51,7 +49,8 @@ function App() {
       locale="fr-FR"
       dictionaries={{
         'en-US': en_US,
-        'fr-FR': () => import('./dictionaries/fr-FR.json'),
+        'fr-FR': () =>
+          import('./dictionaries/fr-FR.json').then(module => module.default),
         'zh-CN': () => ({ greeting: '你好' }),
         // Add other locales here
       }}
@@ -69,11 +68,9 @@ import { Translation } from 'intl-lib';
 
 function Page() {
   const greetingText = useTranslation('greeting');
-  const greetings = useTranslation('greetings');
   return (
     <>
       <pre>{greetingText}</pre>
-      <pre>{greetings.morning}</pre>
       <Translation path="greetings.morning" />
     </>
   );
