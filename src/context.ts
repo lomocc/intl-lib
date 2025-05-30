@@ -5,6 +5,7 @@ import {
   FC,
   PropsWithChildren,
   useContext,
+  useEffect,
   useRef,
 } from 'react';
 import { createStore, ExtractState, useStore } from 'zustand';
@@ -85,7 +86,9 @@ export const IntlContext = createContext<IntlStore | null>(null);
 
 export interface IntlProviderProps
   extends Omit<IntlState, 'defaultLocale'>,
-    Partial<Pick<IntlState, 'defaultLocale'>> {}
+    Partial<Pick<IntlState, 'defaultLocale'>> {
+  onLocaleChange?: (locale: LocaleId) => void;
+}
 
 /**
  * IntlProvider component provides the context for internationalization.
@@ -94,6 +97,7 @@ export interface IntlProviderProps
 export function IntlProvider({
   defaultLocale = 'en-US',
   locale,
+  onLocaleChange,
   dictionaries,
   renderers,
   children,
@@ -111,6 +115,13 @@ export function IntlProvider({
       renderers,
     });
   }
+  useEffect(() => {
+    return storeRef.current!.subscribe((state, prevState) => {
+      if (state.locale !== prevState.locale) {
+        onLocaleChange?.(state.locale);
+      }
+    });
+  }, [onLocaleChange]);
   return createElement(
     IntlContext.Provider,
     { value: storeRef.current },
