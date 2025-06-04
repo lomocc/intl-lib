@@ -117,7 +117,7 @@ export function IntlProvider({
     if (intlStore != null) {
       const state = intlStore.getState();
       if (state.locale !== locale) {
-        state.setLocale(locale);
+        intlStore.setState({ locale });
       }
     }
   }, [locale]);
@@ -129,7 +129,8 @@ export function IntlProvider({
 }
 
 function IntlInitializer({ children }: PropsWithChildren) {
-  const defaultLocale = useIntl(state => state.defaultLocale);
+  const intlStore = useIntlStore();
+  const defaultLocale = useStore(intlStore, state => state.defaultLocale);
   const { data, error } = useTranslationSWR(defaultLocale);
   return data != null && error == null ? children : null;
 }

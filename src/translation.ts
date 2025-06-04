@@ -4,7 +4,7 @@ import React, { createElement, useMemo } from 'react';
 import useSWRImmutable from 'swr/immutable';
 import { useDeepCompareMemoize } from 'use-deep-compare-effect';
 import { useStore } from 'zustand';
-import { useIntl, useIntlStore } from './context';
+import { useIntlStore } from './context';
 import {
   GetByPath,
   LeafPaths,
@@ -47,13 +47,15 @@ export function useTranslationSWR(locale: LocaleId) {
 export function useTranslation(): TranslationType;
 export function useTranslation<TPath extends Paths<TranslationType>>(
   path: TPath,
-  params?: Record<string, any>
+  params?: Record<string, any>,
+  localeOverride?: LocaleId
 ): GetByPath<TranslationType, TPath>;
-export function useTranslation(path?: any, params?: any) {
-  const defaultLocale = useIntl(state => state.defaultLocale);
-  const locale = useIntl(state => state.locale);
+export function useTranslation(path?: any, params?: any, localeOverride?: any) {
+  const intlStore = useIntlStore();
+  const defaultLocale = useStore(intlStore, state => state.defaultLocale);
+  const locale = useStore(intlStore, state => state.locale);
   const { data: defaults } = useTranslationSWR(defaultLocale);
-  const { data = defaults } = useTranslationSWR(locale);
+  const { data = defaults } = useTranslationSWR(localeOverride ?? locale);
   const translation = useMemo(
     () => (data != null && path != null ? get(data, path) : data),
     [data, path]
@@ -88,6 +90,12 @@ export interface TranslationProps<
    * For example, if your translation string is 'Hello, ${name}!', you can pass { name: 'John' } here.
    */
   params?: Record<string, any>;
+  /**
+   * Override the locale for this translation.
+   * This is useful when you want to render a translation in a different locale than the current one.
+   * For example, if your current locale is 'en-US' but you want to render a translation in 'fr-FR',
+   */
+  localeOverride?: LocaleId;
   renderer?: React.FC<{ content: string } & P>;
   rendererProps?: P;
 }
@@ -107,25 +115,26 @@ const matchRegex = new RegExp(`^\\[(${availableTypes.join('|')})\\](.*)$`);
 export function Translation<TPath extends LeafPaths<TranslationType>>({
   path,
   params,
-  renderer: overrideRenderer,
+  localeOverride,
+  renderer: rendererOverride,
   rendererProps,
 }: TranslationProps<TPath>) {
   const intlStore = useIntlStore();
   const renderers = useStore(intlStore, state => state.renderers);
-  const content = useTranslation(path, params) as string;
+  const content = useTranslation(path, params, localeOverride) as string;
   const match = useMemo(() => content.match(matchRegex), [content]);
   if (match != null) {
     const type = match[1];
     const content = match[2];
-    const renderer = overrideRenderer ?? renderers?.[type];
+    const renderer = rendererOverride ?? renderers?.[type];
     invariant(
       renderer != null,
       `Renderer ${type} is not existed. Please define it first.`
     );
     return createElement(renderer, { content, ...rendererProps });
   }
-  if (overrideRenderer != null) {
-    return createElement(overrideRenderer, { content, ...rendererProps });
+  if (rendererOverride != null) {
+    return createElement(rendererOverride, { content, ...rendererProps });
   }
   return content;
 }
@@ -152,10 +161,17 @@ export function t<TPath extends LeafPaths<TranslationType>>(
    * This can be used to replace placeholders in the translation string.
    * For example, if your translation string is 'Hello, ${name}!', you can pass { name: 'John' } here.
    */
-  params?: Record<string, any>
+  params?: Record<string, any>,
+  /**
+   * Override the locale for this translation.
+   * This is useful when you want to render a translation in a different locale than the current one.
+   * For example, if your current locale is 'en-US' but you want to render a translation in 'fr-FR',
+   */
+  localeOverride?: LocaleId
 ) {
   return createElement(Translation, {
     path,
     params,
+    localeOverride,
   });
 }
