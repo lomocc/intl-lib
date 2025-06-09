@@ -74,9 +74,16 @@ export interface IntlAction {
 }
 
 const createIntlStore = (initialProps: IntlState) => {
-  return createStore<IntlState & IntlAction>()(set => ({
+  return createStore<IntlState & IntlAction>()((set, get) => ({
     ...initialProps,
-    setLocale: locale => set({ locale }),
+    setLocale: locale => {
+      const translation = get().dictionaries[locale];
+      invariant(
+        translation != null,
+        `Locale ${locale} is not existed. Please define it first.`
+      );
+      set({ locale });
+    },
   }));
 };
 

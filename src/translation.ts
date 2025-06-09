@@ -24,10 +24,6 @@ export function useTranslationSWR(locale: LocaleId) {
   const intlStore = useIntlStore();
   const dictionaries = useStore(intlStore, state => state.dictionaries);
   const translation = dictionaries[locale];
-  invariant(
-    translation != null,
-    `Locale ${locale} is not existed. Please define it first.`
-  );
   return useSWRImmutable(
     translation != null
       ? [translation, 'internationalization/use-translation-swr']
